@@ -1,0 +1,21 @@
+---
+name: Maintenance - Trunk Upgrade
+
+on:
+  schedule:
+    - cron: 0 0 1 * *
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  trunk-upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Trunk Upgrade
+        uses: trunk-io/trunk-action/upgrade@75699af9e26881e564e9d832ef7dc3af25ec031b # v1.2.4
