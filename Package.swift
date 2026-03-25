@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "rokt-stripe-payment-extension-ios",
+    name: "RoktStripePaymentExtension",
     platforms: [.iOS(.v15)],
     products: [
         .library(name: "RoktStripePaymentExtension", targets: ["RoktStripePaymentExtension"])
