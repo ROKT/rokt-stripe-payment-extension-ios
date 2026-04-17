@@ -24,6 +24,7 @@ final class StripeApplePayManagerTests: XCTestCase {
         ext.presentPaymentSheet(
             item: item,
             method: .applePay,
+            context: PaymentContext(),
             from: UIViewController(),
             preparePayment: { _, _ in fatalError("should not be called") }
         ) { result in
@@ -44,6 +45,7 @@ final class StripeApplePayManagerTests: XCTestCase {
         ext.presentPaymentSheet(
             item: item,
             method: .applePay,
+            context: PaymentContext(),
             from: UIViewController(),
             preparePayment: { _, _ in fatalError("should not be called") }
         ) { result in
@@ -64,6 +66,7 @@ final class StripeApplePayManagerTests: XCTestCase {
         ext.presentPaymentSheet(
             item: item,
             method: .applePay,
+            context: PaymentContext(),
             from: UIViewController(),
             preparePayment: { _, _ in fatalError("should not be called") }
         ) { result in
@@ -84,6 +87,7 @@ final class StripeApplePayManagerTests: XCTestCase {
         ext.presentPaymentSheet(
             item: item,
             method: .applePay,
+            context: PaymentContext(),
             from: UIViewController(),
             preparePayment: { _, _ in fatalError("should not be called") }
         ) { result in
@@ -105,6 +109,7 @@ final class StripeApplePayManagerTests: XCTestCase {
         unregisteredExt.presentPaymentSheet(
             item: item,
             method: .applePay,
+            context: PaymentContext(),
             from: UIViewController(),
             preparePayment: { _, _ in fatalError("should not be called") }
         ) { result in

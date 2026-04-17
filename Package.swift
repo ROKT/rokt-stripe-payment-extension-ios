@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "RoktStripePaymentExtension", targets: ["RoktStripePaymentExtension"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ROKT/rokt-contracts-apple.git", .upToNextMinor(from: "0.1.2")),
+        .package(
+            url: "https://github.com/ROKT/rokt-contracts-apple.git",
+            branch: "feat/thomson-t-payment-context"
+        ),
         .package(url: "https://github.com/stripe/stripe-ios.git", from: "24.25.0")
     ],
     targets: [
@@ -16,7 +19,8 @@ let package = Package(
             name: "RoktStripePaymentExtension",
             dependencies: [
                 .product(name: "RoktContracts", package: "rokt-contracts-apple"),
-                .product(name: "StripeApplePay", package: "stripe-ios")
+                .product(name: "StripeApplePay", package: "stripe-ios"),
+                .product(name: "StripePayments", package: "stripe-ios")
             ]
         ),
         .testTarget(

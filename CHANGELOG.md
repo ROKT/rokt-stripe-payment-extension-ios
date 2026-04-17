@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Bump RoktContracts to `~> 1.0` and adopt new `PaymentContext` parameter on
+  `presentPaymentSheet(item:method:context:from:preparePayment:completion:)`.
+
+### Added
+
+- Afterpay / Clearpay support via Stripe `STPPaymentHandler`, gated on a `returnURL`
+  supplied at extension initialization.
+- `BillingDetailsMapping` helper for translating `ContactAddress` to Stripe billing
+  and shipping detail types.
+
 ## [0.1.2] - 2026-04-02
 
 ### Breaking Changes

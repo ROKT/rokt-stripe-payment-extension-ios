@@ -5,7 +5,8 @@ Pod::Spec.new do |s|
   s.swift_version    = '5.9'
   s.description      = <<-DESC
   Stripe payment integration for Rokt Shoppable Ads. Implements the PaymentExtension
-  protocol from RoktContracts to provide Apple Pay support via Stripe.
+  protocol from RoktContracts to provide Apple Pay, card, and Afterpay/Clearpay support
+  via Stripe.
                        DESC
   s.homepage         = 'https://github.com/ROKT/rokt-stripe-payment-extension-ios'
   s.license          = { :type => 'Rokt SDK Terms of Use 2.0', :file => 'LICENSE.md' }
@@ -14,6 +15,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '15.0'
   s.source_files = 'Sources/RoktStripePaymentExtension/**/*.swift'
   s.frameworks = 'Foundation', 'PassKit'
-  s.dependency 'RoktContracts', '~> 0.1'
+  s.dependency 'RoktContracts', '~> 1.0'
   s.dependency 'StripeApplePay', '~> 24.25'
+  s.dependency 'StripePayments', '~> 24.25'
 end
