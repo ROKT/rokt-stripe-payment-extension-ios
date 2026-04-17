@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   supplied at extension initialization.
 - `BillingDetailsMapping` helper for translating `ContactAddress` to Stripe billing
   and shipping detail types.
+- `handleURLCallback(with:)` implementation forwarding redirect URLs to
+  `StripeAPI.handleURLCallback(with:)` so the Rokt SDK can complete in-flight
+  Afterpay redirect flows.
 
 ## [0.1.2] - 2026-04-02
 

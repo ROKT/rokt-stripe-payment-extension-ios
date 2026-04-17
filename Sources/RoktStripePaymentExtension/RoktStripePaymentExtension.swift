@@ -117,4 +117,11 @@ public class RoktStripePaymentExtension: PaymentExtension {
             completion(.failed(error: "Unsupported payment method: \(method.wireValue)"))
         }
     }
+
+    /// Forwards a redirect URL to Stripe so it can complete in-flight redirect-based
+    /// flows (e.g. Afterpay). The Rokt SDK calls this after the host app receives a
+    /// URL matching a registered extension's return URL scheme.
+    public func handleURLCallback(with url: URL) -> Bool {
+        StripeAPI.handleURLCallback(with: url)
+    }
 }

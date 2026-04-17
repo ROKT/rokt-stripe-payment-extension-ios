@@ -83,4 +83,10 @@ final class RoktStripePaymentExtensionTests: XCTestCase {
 
         waitForExpectations(timeout: 1)
     }
+
+    func testHandleURLCallbackReturnsFalseForUnrelatedURL() {
+        let ext = RoktStripePaymentExtension(applePayMerchantId: "merchant.test")!
+        let url = URL(string: "myapp://unrelated-callback")!
+        XCTAssertFalse(ext.handleURLCallback(with: url))
+    }
 }
