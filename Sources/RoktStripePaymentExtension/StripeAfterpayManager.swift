@@ -1,0 +1,117 @@
+import Foundation
+import RoktContracts
+import StripePayments
+import UIKit
+
+internal class StripeAfterpayManager {
+
+    private let apiClient: STPAPIClient
+    private let returnURL: String
+
+    internal init(apiClient: STPAPIClient, returnURL: String) {
+        self.apiClient = apiClient
+        self.returnURL = returnURL
+    }
+
+    internal func presentPayment(
+        item: PaymentItem,
+        context: PaymentContext,
+        from viewController: UIViewController,
+        preparePayment: @escaping (
+            _ address: ContactAddress,
+            _ completion: @escaping (PaymentPreparation?, Error?) -> Void
+        ) -> Void,
+        completion: @escaping (PaymentSheetResult) -> Void
+    ) {
+        guard !item.name.isEmpty else {
+            completion(.failed(error: "Payment item name cannot be empty"))
+            return
+        }
+
+        guard !item.id.isEmpty else {
+            completion(.failed(error: "Payment item id cannot be empty"))
+            return
+        }
+
+        guard item.amount.compare(NSDecimalNumber.zero) == .orderedDescending else {
+            completion(.failed(error: "Payment item amount must be greater than zero"))
+            return
+        }
+
+        guard !item.currency.isEmpty else {
+            completion(.failed(error: "Payment item currency cannot be empty"))
+            return
+        }
+
+        guard let billingAddress = context.billingAddress else {
+            completion(.failed(error: "Afterpay requires a billing address. Provide billingAddress in PaymentContext."))
+            return
+        }
+
+        // Call preparePayment with the pre-collected address before showing any UI
+        preparePayment(billingAddress) { [weak self] preparation, error in
+            guard let self else { return }
+
+            if let error, preparation == nil {
+                completion(.failed(error: error.localizedDescription))
+                return
+            }
+
+            guard let preparation else {
+                completion(.failed(error: "Payment preparation returned nil"))
+                return
+            }
+
+            // STPPaymentHandler.shared() uses STPAPIClient.shared internally,
+            // so we must configure the shared client with the same publishable key
+            // and connected account. (Unlike STPApplePayContext which accepts a
+            // custom apiClient directly.)
+            STPAPIClient.shared.publishableKey = self.apiClient.publishableKey
+            STPAPIClient.shared.stripeAccount = preparation.merchantId
+            self.apiClient.stripeAccount = preparation.merchantId
+
+            let params = STPPaymentIntentParams(clientSecret: preparation.clientSecret)
+            params.paymentMethodParams = STPPaymentMethodParams(
+                afterpayClearpay: STPPaymentMethodAfterpayClearpayParams(),
+                billingDetails: BillingDetailsMapping.map(from: billingAddress),
+                metadata: nil
+            )
+            params.returnURL = self.returnURL
+
+            if let shippingAddress = context.shippingAddress {
+                params.shipping = BillingDetailsMapping.mapShipping(from: shippingAddress)
+            }
+
+            let authContext = SimpleAuthenticationContext(presentingController: viewController)
+
+            DispatchQueue.main.async {
+                STPPaymentHandler.shared().confirmPayment(params, with: authContext) { status, intent, error in
+                    switch status {
+                    case .succeeded:
+                        completion(.succeeded(transactionId: intent?.stripeId ?? preparation.clientSecret))
+                    case .canceled:
+                        completion(.canceled)
+                    case .failed:
+                        completion(.failed(error: error?.localizedDescription ?? "Afterpay payment failed"))
+                    @unknown default:
+                        completion(.failed(error: "Unknown payment status"))
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - STPAuthenticationContext wrapper
+
+private class SimpleAuthenticationContext: NSObject, STPAuthenticationContext {
+    private let controller: UIViewController
+
+    init(presentingController: UIViewController) {
+        self.controller = presentingController
+    }
+
+    func authenticationPresentingViewController() -> UIViewController {
+        controller
+    }
+}

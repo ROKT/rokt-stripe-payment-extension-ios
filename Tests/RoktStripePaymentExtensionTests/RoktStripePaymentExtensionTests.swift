@@ -1,5 +1,6 @@
 import XCTest
 @testable import RoktStripePaymentExtension
+import RoktContracts
 
 final class RoktStripePaymentExtensionTests: XCTestCase {
 
@@ -16,7 +17,7 @@ final class RoktStripePaymentExtensionTests: XCTestCase {
         let ext = RoktStripePaymentExtension(applePayMerchantId: "merchant.test")!
         XCTAssertEqual(ext.id, "rokt-stripe-payment-extension")
         XCTAssertEqual(ext.extensionDescription, "Rokt Stripe Payment Extension")
-        XCTAssertEqual(ext.supportedMethods, ["apple_pay", "card"])
+        XCTAssertEqual(ext.supportedMethods, ["apple_pay", "card", "afterpay_clearpay"])
     }
 
     func testOnRegisterWithoutStripeKeyReturnsFalse() {
@@ -37,14 +38,55 @@ final class RoktStripePaymentExtensionTests: XCTestCase {
     func testOnUnregisterNilsManager() {
         let ext = RoktStripePaymentExtension(applePayMerchantId: "merchant.test")!
         XCTAssertTrue(ext.onRegister(parameters: ["stripeKey": "pk_test_123"]))
-        // onUnregister should not throw and should leave extension in a usable state for re-registration
         ext.onUnregister()
-        // After unregister, re-registration should still succeed
         XCTAssertTrue(ext.onRegister(parameters: ["stripeKey": "pk_test_456"]))
     }
 
     func testInitWithCustomCountryCode() {
         let ext = RoktStripePaymentExtension(applePayMerchantId: "merchant.test", countryCode: "AU")
         XCTAssertNotNil(ext)
+    }
+
+    func testInitWithReturnURL() {
+        let ext = RoktStripePaymentExtension(
+            applePayMerchantId: "merchant.test",
+            returnURL: "myapp://stripe-redirect"
+        )
+        XCTAssertNotNil(ext)
+    }
+
+    func testAfterpayNotConfiguredWithoutReturnURL() {
+        let ext = RoktStripePaymentExtension(applePayMerchantId: "merchant.test")!
+        ext.onRegister(parameters: ["stripeKey": "pk_test_123"])
+
+        let item = PaymentItem(id: "item-1", name: "Widget", amount: 10.00, currency: "USD")
+        let context = PaymentContext(
+            billingAddress: ContactAddress(name: "Test", email: "test@example.com")
+        )
+        let expect = expectation(description: "completion")
+
+        ext.presentPaymentSheet(
+            item: item,
+            method: .afterpay,
+            context: context,
+            from: UIViewController(),
+            preparePayment: { _, done in
+                XCTFail("preparePayment should not be called when Afterpay is not configured")
+                done(nil, nil)
+            },
+            completion: { result in
+                XCTAssertEqual(result.outcome, .failed)
+                XCTAssertTrue(result.errorMessage?.contains("Afterpay not configured") ?? false)
+                expect.fulfill()
+            }
+        )
+
+        waitForExpectations(timeout: 1)
+    }
+
+    func testHandleURLCallbackReturnsFalseForUnrelatedURL() {
+        let ext = RoktStripePaymentExtension(applePayMerchantId: "merchant.test")!
+        let url = URL(string: "myapp://unrelated-callback")!
+        XCTAssertFalse(ext.handleURLCallback(with: url))
     }
 }
