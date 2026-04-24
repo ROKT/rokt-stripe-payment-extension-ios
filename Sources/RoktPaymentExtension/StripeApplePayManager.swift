@@ -95,6 +95,35 @@ internal class StripeApplePayManager: NSObject {
         ]
         return request
     }
+
+    /// Builds the line-itemized PassKit summary shown in the Apple Pay sheet.
+    ///
+    /// `total` must be taken from the server's `PaymentPreparation.totalAmount`
+    /// rather than computed as `subtotal + shipping + tax` on the client — the
+    /// server is the source of truth for the amount that will be charged against
+    /// the PaymentIntent, and any client-side arithmetic risks drifting from it
+    /// (rounding, promo codes, tax recalculation, etc.). Shipping and tax rows
+    /// are only appended when positive to keep the sheet clean for orders that
+    /// have neither.
+    static func makeSummaryItems(
+        itemName: String,
+        subtotal: NSDecimalNumber,
+        shippingCost: NSDecimalNumber,
+        tax: NSDecimalNumber,
+        total: NSDecimalNumber
+    ) -> [PKPaymentSummaryItem] {
+        var items: [PKPaymentSummaryItem] = [
+            PKPaymentSummaryItem(label: itemName, amount: subtotal)
+        ]
+        if shippingCost.compare(NSDecimalNumber.zero) == .orderedDescending {
+            items.append(PKPaymentSummaryItem(label: "Shipping", amount: shippingCost))
+        }
+        if tax.compare(NSDecimalNumber.zero) == .orderedDescending {
+            items.append(PKPaymentSummaryItem(label: "Tax", amount: tax))
+        }
+        items.append(PKPaymentSummaryItem(label: "Total", amount: total))
+        return items
+    }
 }
 
 // MARK: - Private delegate
@@ -142,12 +171,16 @@ private class StripeApplePayDelegate: NSObject, ApplePayContextDelegate {
                 self.clientSecret = preparation.clientSecret
                 self.apiClient.stripeAccount = preparation.merchantId
 
-                let updatedItems = [
-                    PKPaymentSummaryItem(
-                        label: "Total",
-                        amount: self.item.amount
-                    )
-                ]
+                // Total must come from the server preparation, not from `item.amount` —
+                // `item.amount` is the subtotal and does not include shipping or tax, so
+                // using it here makes the sheet's Total disagree with the Stripe charge.
+                let updatedItems = StripeApplePayManager.makeSummaryItems(
+                    itemName: self.item.name,
+                    subtotal: self.item.amount,
+                    shippingCost: preparation.shippingCost,
+                    tax: preparation.tax,
+                    total: preparation.totalAmount
+                )
 
                 handler(PKPaymentRequestShippingContactUpdate(
                     errors: nil,

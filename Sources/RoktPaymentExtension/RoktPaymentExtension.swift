@@ -179,6 +179,12 @@ public class RoktPaymentExtension: PaymentExtension {
                 completion: completion
             )
 
+        case .paypal:
+            // PayPal is defined in RoktContracts 2.x but not yet implemented here.
+            // Handled explicitly (rather than falling through `@unknown default`) so the
+            // compiler flags any future enum additions instead of silently accepting them.
+            completion(.failed(error: "Unsupported payment method: \(method.wireValue)"))
+
         @unknown default:
             completion(.failed(error: "Unsupported payment method: \(method.wireValue)"))
         }
