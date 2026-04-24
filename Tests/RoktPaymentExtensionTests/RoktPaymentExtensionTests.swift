@@ -154,6 +154,30 @@ final class RoktPaymentExtensionTests: XCTestCase {
         waitForExpectations(timeout: 1)
     }
 
+    func testPaypalIsRejectedAsUnsupported() {
+        let ext = RoktPaymentExtension(applePayMerchantId: "merchant.test")!
+        let item = PaymentItem(id: "item-1", name: "Widget", amount: 10.00, currency: "USD")
+        let expect = expectation(description: "completion")
+
+        ext.presentPaymentSheet(
+            item: item,
+            method: .paypal,
+            context: PaymentContext(),
+            from: UIViewController(),
+            preparePayment: { _, done in
+                XCTFail("preparePayment should not be called for unsupported methods")
+                done(nil, nil)
+            },
+            completion: { result in
+                XCTAssertEqual(result.outcome, .failed)
+                XCTAssertEqual(result.errorMessage, "Unsupported payment method: paypal")
+                expect.fulfill()
+            }
+        )
+
+        waitForExpectations(timeout: 1)
+    }
+
     // MARK: - Scheme validation helpers
 
     func testIsValidBareSchemeAcceptsBareScheme() {

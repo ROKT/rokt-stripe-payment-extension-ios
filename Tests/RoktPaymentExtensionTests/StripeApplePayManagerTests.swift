@@ -1,3 +1,4 @@
+import PassKit
 import RoktContracts
 import XCTest
 @testable import RoktPaymentExtension
@@ -97,6 +98,58 @@ final class StripeApplePayManagerTests: XCTestCase {
         }
 
         waitForExpectations(timeout: 1)
+    }
+
+    // MARK: - Summary items
+
+    func testMakeSummaryItemsIncludesShippingAndTaxAndUsesTotal() {
+        let items = StripeApplePayManager.makeSummaryItems(
+            itemName: "Widget",
+            subtotal: NSDecimalNumber(string: "80.00"),
+            shippingCost: NSDecimalNumber(string: "5.00"),
+            tax: NSDecimalNumber(string: "3.53"),
+            total: NSDecimalNumber(string: "88.53")
+        )
+
+        XCTAssertEqual(items.count, 4)
+        XCTAssertEqual(items[0].label, "Widget")
+        XCTAssertEqual(items[0].amount, NSDecimalNumber(string: "80.00"))
+        XCTAssertEqual(items[1].label, "Shipping")
+        XCTAssertEqual(items[1].amount, NSDecimalNumber(string: "5.00"))
+        XCTAssertEqual(items[2].label, "Tax")
+        XCTAssertEqual(items[2].amount, NSDecimalNumber(string: "3.53"))
+        XCTAssertEqual(items[3].label, "Total")
+        XCTAssertEqual(items[3].amount, NSDecimalNumber(string: "88.53"))
+    }
+
+    func testMakeSummaryItemsSkipsZeroShippingAndZeroTax() {
+        let items = StripeApplePayManager.makeSummaryItems(
+            itemName: "Widget",
+            subtotal: NSDecimalNumber(string: "80.00"),
+            shippingCost: .zero,
+            tax: .zero,
+            total: NSDecimalNumber(string: "80.00")
+        )
+
+        XCTAssertEqual(items.count, 2)
+        XCTAssertEqual(items[0].label, "Widget")
+        XCTAssertEqual(items[1].label, "Total")
+        XCTAssertEqual(items[1].amount, NSDecimalNumber(string: "80.00"))
+    }
+
+    func testMakeSummaryItemsPreservesDecimalPrecisionForTotal() {
+        // Guards against ever switching to Double-based construction (83.53 → 83.5299999...).
+        let items = StripeApplePayManager.makeSummaryItems(
+            itemName: "Widget",
+            subtotal: NSDecimalNumber(string: "80"),
+            shippingCost: .zero,
+            tax: NSDecimalNumber(string: "3.53"),
+            total: NSDecimalNumber(string: "83.53")
+        )
+
+        let total = items.last!
+        XCTAssertEqual(total.label, "Total")
+        XCTAssertEqual(total.amount, NSDecimalNumber(string: "83.53"))
     }
 
     // MARK: - Validation: no manager (not registered)
